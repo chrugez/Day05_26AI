@@ -1,10 +1,10 @@
-# AI Product Canvas — MoMo AI Financial Assistant
+# AI Product Canvas — MoMo - Moni AI Financial Assistant
 
 ## Canvas
 
 | | Value | Trust | Feasibility |
 |--|--|--|--|
-| Core | **User:** Người dùng MoMo có nhu cầu quản lý chi tiêu cá nhân, phát sinh nhiều giao dịch nhỏ mỗi ngày. **Pain:** Không nhớ mình đã tiêu gì, ngại nhập tay, báo cáo tài chính cá nhân thiếu đầy đủ vì nhiều khoản chi ngoài MoMo không được ghi lại. **Value:** AI gợi ý danh mục giao dịch và hỗ trợ nhập nhanh bằng ngôn ngữ tự nhiên, giúp giảm thời gian ghi chép, tăng độ đầy đủ dữ liệu, và tạo báo cáo chi tiêu hữu ích hơn. | **Khi sai:** AI gán sai danh mục, làm báo cáo sai, user hiểu sai hành vi tài chính của mình. **User biết sai bằng cách nào:** Thường chỉ phát hiện khi xem lại giao dịch hoặc thấy báo cáo bất hợp lý. **Explain:** Hiện trạng chưa giải thích rõ vì sao AI chọn danh mục đó. **Sửa:** User phải vào giao dịch và sửa category, khoảng 3–4 bước. | **Architecture:** LLM-first với GPT-4o-mini cho parse + classify + explain; fallback rule-based cho các case đơn giản. **Cost:** khoảng 0.0005–0.002 USD/request. **Latency:** khoảng 300ms–1s. **Risk:** cost scale nếu gọi LLM mọi request; output không ổn định; hallucination nhẹ; data thiếu làm AI vẫn đoán sai. |
+| Core | **User:** Người dùng MoMo có nhu cầu quản lý chi tiêu cá nhân, phát sinh nhiều giao dịch nhỏ mỗi ngày. **Pain:** Không nhớ mình đã tiêu gì, ngại nhập tay, báo cáo tài chính cá nhân thiếu đầy đủ vì nhiều khoản chi ngoài MoMo không được ghi lại. **Value:** AI gợi ý danh mục giao dịch và hỗ trợ nhập nhanh bằng ngôn ngữ tự nhiên, giúp giảm thời gian ghi chép, tăng độ đầy đủ dữ liệu, và tạo báo cáo chi tiêu hữu ích hơn. | **Khi sai:** AI gán sai danh mục, làm báo cáo sai, user hiểu sai hành vi tài chính của mình. **User biết sai bằng cách nào:** Thường chỉ phát hiện khi xem lại giao dịch hoặc thấy báo cáo bất hợp lý. **Explain:** Hiện trạng chưa giải thích rõ vì sao AI chọn danh mục đó. **Sửa:** User phải vào giao dịch và sửa category, khoảng 3–4 bước. | **Architecture:** Hybrid (Rule-based cho merchant quen thuộc, LLM với GPT-4o-mini cho text tự nhiên). **Cost:** khoảng 0.0005–0.002 USD/request. **Latency:** khoảng 300ms–1s. **Risk:** cost scale nếu gọi LLM mọi request; output không ổn định; hallucination nhẹ; data thiếu làm AI vẫn đoán sai. |
 | Then chốt | **Augmentation** — AI gợi ý, user quyết định cuối cùng. Nếu để automation hoàn toàn, user có thể không biết AI sai và hiểu sai tình hình tài chính, rất nguy hiểm với bài toán tiền bạc. | **4-path:** xem phần User stories dưới. Hướng tin cậy nên là AI biết khi nào không chắc và hỏi lại nhẹ thay vì luôn tự quyết. | **Precision + trust first cho trải nghiệm tài chính cá nhân.** Sai âm thầm nguy hiểm hơn hơi phiền vì phải xác nhận. Đồng thời cần giữ recall đủ tốt để không bỏ sót giao dịch cần phân loại. |
 
 ## Learning signal
@@ -43,7 +43,7 @@ Feature: Gợi ý danh mục giao dịch. Trigger: có giao dịch mới hoặc 
 | # | Trigger | Hậu quả | Mitigation |
 |--|--|--|--|
 | 1 | Giao dịch mơ hồ, cùng một người nhận nhưng nhiều mục đích khác nhau | AI gán sai với confidence cao, user không biết | Thêm confidence threshold; nếu thiếu ngữ cảnh thì hỏi lại thay vì auto-assign |
-| 2 | Dữ liệu nhạy cảm gửi qua external API | Rủi ro lộ thông tin tài chính cá nhân | Redact / mask PII trước khi gửi; tối thiểu hóa payload; log an toàn |
+| 2 | Dữ liệu nhạy cảm gửi qua external API | Rủi ro lộ thông tin tài chính cá nhân | Redact / mask PII trước khi gửi; Sử dụng On-device Model cho các task phân loại đơn giản hoặc dùng Private Instance LLM trên hạ tầng nội bộ; tối thiểu hóa payload; log an toàn |
 | 3 | User mới, chưa có correction history | AI cá nhân hóa kém, gợi ý yếu | Cold-start bằng rule-based + merchant defaults trong 2 tuần đầu |
 | 4 | User không nhập chi tiêu ngoài MoMo | Dữ liệu không đầy đủ, báo cáo sai lệch | Thiết kế quick add bằng text/chat; nhắc nhập nhanh, giảm friction |
 | 5 | LLM output không ổn định | Cùng input nhưng category khác nhau | Chuẩn hóa prompt, ép output schema, có post-processing rules |
@@ -72,4 +72,28 @@ Feature: Gợi ý danh mục giao dịch. Trigger: có giao dịch mới hoặc 
 - P95 latency >2s mà không cải thiện được
 - Cost LLM > benefit 2 tháng liên tục
 - Tỷ lệ user quay lại feature không tăng dù đã cải thiện trust UX
+
+## Sketch cải thiện path yếu nhất
+
+**Path yếu nhất:** AI không chắc nhưng hiện tại vẫn đoán.
+
+**As-is:**
+- User giao dịch -> AI auto classify -> user không biết AI đang đoán -> nếu sai thì data sai và trust giảm.
+
+**To-be:**
+- User giao dịch -> AI classify + confidence
+- Nếu confidence cao -> auto assign + confirm nhẹ
+- Nếu confidence thấp -> hỏi lại ngắn “Mình chưa chắc, đây là gì?” + 2–3 lựa chọn nhanh
+- Sau khi user chọn -> hỏi “Nhớ cho lần sau?” -> lưu correction vào learning loop.
+
+## Phân chia công việc cho team A4-C401
+
+| Thành viên | Vai trò chính | Phạm vi công việc | Deliverable |
+|--|--|--|--|
+| Hoàng Quốc Chung - 2A202600070 | Tổng hợp & điều phối | Chốt đề tài MoMo - Trợ thủ AI Moni, giữ cấu trúc bài, tổng hợp đầu ra từ cả nhóm, rà soát logic toàn bộ canvas | Bản final `canvas.md` hoàn chỉnh |
+| Trịnh Đức Anh - 2A202600499 | Research sản phẩm & value | Tìm hiểu promise của MoMo AI, pain point người dùng, xác định user, value proposition, core problem | Phần `Canvas > Value` |
+| Bùi Văn Đạt - 2A202600355 | Trust & UX analysis | Phân tích trải nghiệm thực tế, 4 paths (happy / low-confidence / failure / correction), trust gap giữa marketing và thực tế | Phần `Canvas > Trust` và `User stories — 4 paths` |
+| Dương Văn Hiệp - 2A202600052 | Feasibility & risk | Đề xuất kiến trúc LLM-first với GPT-4o-mini, ước lượng cost/latency, nêu dependencies và failure modes kỹ thuật | Phần `Canvas > Feasibility`, `Failure modes` |
+| Hoàng Thái Dương - 2A202600073 | Learning & evaluation | Xác định correction loop, learning signal, metric đánh giá, threshold, red flags, kill criteria | Phần `Learning signal`, `Eval`, `Kill criteria` |
+| Nguyễn Minh Quân - 2A202600181 | ROI & sketch | Viết phần ROI, kết luận sản phẩm, và sketch cải thiện path yếu nhất theo As-is / To-be | Phần `ROI` và `Gợi ý sketch cải thiện path yếu nhất` |
 
